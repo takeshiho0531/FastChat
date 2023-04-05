@@ -17,7 +17,7 @@ RUN pip install poetry==1.4.0
 
 WORKDIR /src/FastChat
 
-RUN pip3 install --upgrade pip  # enable PEP 660 support && pip3 install -e .
+RUN pip3 install --upgrade pip && pip3 install -e .
 
 
 #RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts

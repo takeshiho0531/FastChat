@@ -1,0 +1,8 @@
+.mypy_cache
+.pytest_cache
+.github
+.venv
+Makefile
+k8s
+PiPfile
+Piptfile.lock
