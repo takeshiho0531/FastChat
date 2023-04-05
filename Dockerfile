@@ -11,11 +11,12 @@ RUN pip install --upgrade pip
 # opencv-python用
 
 
-RUN apt install git -y && git clone https://github.com/takeshiho0531/FastChat.git
+# RUN apt install git -y && git clone https://github.com/takeshiho0531/FastChat.git
 
 RUN pip install poetry==1.4.0
 
-WORKDIR /src/FastChat
+COPY pyproject.toml ./
+COPY ./fastchat /src/fastchat/
 
 RUN pip3 install --upgrade pip && pip3 install -e .
 
@@ -31,4 +32,5 @@ RUN pip3 install --upgrade pip && pip3 install -e .
 #RUN --mount=type=ssh --mount=type=cache,target=/root/.cache poetry install --no-dev --no-root
 
 #COPY ./api /src/api/
-WORKDIR /src
+#COPY ./api /src/api/
+#WORKDIR /src
