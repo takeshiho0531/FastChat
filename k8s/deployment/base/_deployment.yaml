@@ -27,7 +27,8 @@ spec:
           command: # ここにコマンドを記述します。
             - "/bin/sh"
             - "-c"
-            - "
+            - "cd /src && 
+               cp /src/data/akiho-kawada/fastchat/
               "
 
           resources:
