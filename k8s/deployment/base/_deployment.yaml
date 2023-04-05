@@ -34,17 +34,17 @@ spec:
             limits:
               nvidia.com/gpu: 0 # GPUが欲しい人はここに書きます。
           volumeMounts:
-            - name: nfs # オフィスのファイルサーバーの/var/nfs/dataをコンテナ内の/var/data/にマウントします。
-              mountPath: "/var/data/"
+            - name: nas # オフィスのファイルサーバーの/var/nfs/dataをコンテナ内の/var/data/にマウントします。
+              mountPath: "/src/data/"  # TODO: どこに保存するか 
             - name: dsh
               mountPath: /dev/shm # おまじないです。これがないとOOMが起きます。
 
       volumes:
         - name: app
-        - name: nfs
+        - name: nas
           nfs:
-            server: 192.168.1.126
-            path: /var/nfs/data/
+            server: 192.168.1.252
+            path: /volume1/akiho-kawada/fastchat
         - name: dsh
           emptyDir:
             medium: Memory
