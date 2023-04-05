@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastchat
+  labels:
+    app: fastchat
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastchat
+  # backoffLimit: 0 # デフォルト値は6です。
+  # ttlSecondsAfterFinished: 259200 # 停止したジョブを259200秒(3日)後に削除するという意味です。
+  template:
+    metadata:
+      labels:
+        app: fastchat
+    spec:
+
+      containers:
+        - name: fastchat
+          image: " "
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          command: # ここにコマンドを記述します。
+            - "/bin/sh"
+            - "-c"
+            - "
+              "
+
+          resources:
+            limits:
+              nvidia.com/gpu: 0 # GPUが欲しい人はここに書きます。
+          volumeMounts:
+            - name: nfs # オフィスのファイルサーバーの/var/nfs/dataをコンテナ内の/var/data/にマウントします。
+              mountPath: "/var/data/"
+            - name: dsh
+              mountPath: /dev/shm # おまじないです。これがないとOOMが起きます。
+
+      volumes:
+        - name: app
+        - name: nfs
+          nfs:
+            server: 192.168.1.126
+            path: /var/nfs/data/
+        - name: dsh
+          emptyDir:
+            medium: Memory
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastchat-clusterip
+spec:
+  type: ClusterIP
+  ports:
+    - name: "http-port"
+      protocol: "TCP"
+      port: 80
+      targetPort: 8000
+  selector:
+    app: fastchat
