@@ -6,7 +6,7 @@ RUN apt-get update -y && apt-get upgrade -y
 
 RUN pip install --upgrade pip
 
-#RUN apt-get install -y libgl1-mesa-dev && \  
+#RUN apt-get install -y libgl1-mesa-dev && \
     #apt-get install -y libglib2.0-0
 # opencv-python用
 
