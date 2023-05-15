@@ -86,7 +86,8 @@ def get_peft_state_maybe_zero_3(state_dict, bias):
     return to_return
 
 class CastOutputToFloat(nn.Sequential):
-    def forward(self, x): return super().forward(x).to(torch.float32)
+    def forward(self, x):
+        return super().forward(x).to(torch.float32)
 
 # def train():
 parser = transformers.HfArgumentParser(
