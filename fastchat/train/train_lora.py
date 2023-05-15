@@ -88,80 +88,80 @@ def get_peft_state_maybe_zero_3(state_dict, bias):
 class CastOutputToFloat(nn.Sequential):
     def forward(self, x): return super().forward(x).to(torch.float32)
 
-def train():
-    parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments, LoraArguments)
-    )
-    (
-        model_args,
-        data_args,
-        training_args,
-        lora_args,
-    ) = parser.parse_args_into_dataclasses()
+# def train():
+parser = transformers.HfArgumentParser(
+    (ModelArguments, DataArguments, TrainingArguments, LoraArguments)
+)
+(
+    model_args,
+    data_args,
+    training_args,
+    lora_args,
+) = parser.parse_args_into_dataclasses()
 
-    model = transformers.AutoModelForCausalLM.from_pretrained(
-        model_args.model_name_or_path,
-        load_in_8bit=True,
-        device_map='auto',
-        cache_dir=training_args.cache_dir,
-    )
-    for param in model.parameters():
-        param.requires_grad = False  # freeze the model - train adapters later
-        if param.ndim == 1:
-            # cast the small parameters (e.g. layernorm) to fp32 for stability
-            param.data = param.data.to(torch.float32)
-    model.gradient_checkpointing_enable()  # reduce number of stored activations
-    model.enable_input_require_grads()
+model = transformers.AutoModelForCausalLM.from_pretrained(
+    model_args.model_name_or_path,
+    load_in_8bit=True,
+    device_map='auto',
+    cache_dir=training_args.cache_dir,
+)
+for param in model.parameters():
+    param.requires_grad = False  # freeze the model - train adapters later
+    if param.ndim == 1:
+        # cast the small parameters (e.g. layernorm) to fp32 for stability
+        param.data = param.data.to(torch.float32)
+model.gradient_checkpointing_enable()  # reduce number of stored activations
+model.enable_input_require_grads()
 
-    model.lm_head = CastOutputToFloat(model.lm_head)
+model.lm_head = CastOutputToFloat(model.lm_head)
 
-    lora_config = LoraConfig(
-        r=lora_args.lora_r,
-        lora_alpha=lora_args.lora_alpha,
-        target_modules=lora_args.lora_target_modules,
-        lora_dropout=lora_args.lora_dropout,
-        bias=lora_args.bias,
-        task_type="CAUSAL_LM",
-    )
-    model = get_peft_model(model, lora_config)
-    if training_args.deepspeed is not None and training_args.local_rank == 0:
-        model.print_trainable_parameters()
+lora_config = LoraConfig(
+    r=lora_args.lora_r,
+    lora_alpha=lora_args.lora_alpha,
+    target_modules=lora_args.lora_target_modules,
+    lora_dropout=lora_args.lora_dropout,
+    bias=lora_args.bias,
+    task_type="CAUSAL_LM",
+)
+model = get_peft_model(model, lora_config)
+if training_args.deepspeed is not None and training_args.local_rank == 0:
+    model.print_trainable_parameters()
 
-    if training_args.gradient_checkpointing:
-        logging.warning(
-            "gradient checkpointing with lora makes requires_grad "
-            "incorrect and needs a monkey patch in Trainer or the "
-            "wrapped model's forward. ref: "
-            "https://github.com/lm-sys/FastChat/pull/138#issuecomment-1509172198"
-        )
-
-    tokenizer = transformers.AutoTokenizer.from_pretrained(
-        model_args.model_name_or_path,
-        cache_dir=training_args.cache_dir,
-        model_max_length=training_args.model_max_length,
-        padding_side="right",
-        use_fast=False,
-    )
-    tokenizer.pad_token = tokenizer.unk_token
-
-    data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
-    trainer = Trainer(
-        model=model, tokenizer=tokenizer, args=training_args, **data_module
+if training_args.gradient_checkpointing:
+    logging.warning(
+        "gradient checkpointing with lora makes requires_grad "
+        "incorrect and needs a monkey patch in Trainer or the "
+        "wrapped model's forward. ref: "
+        "https://github.com/lm-sys/FastChat/pull/138#issuecomment-1509172198"
     )
 
-    model.config.use_cache = False
+tokenizer = transformers.AutoTokenizer.from_pretrained(
+    model_args.model_name_or_path,
+    cache_dir=training_args.cache_dir,
+    model_max_length=training_args.model_max_length,
+    padding_side="right",
+    use_fast=False,
+)
+tokenizer.pad_token = tokenizer.unk_token
 
-    if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
-        trainer.train(resume_from_checkpoint=True)
-    else:
-        trainer.train()
-    trainer.save_state()
+data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+trainer = Trainer(
+    model=model, tokenizer=tokenizer, args=training_args, **data_module
+)
 
-    # Save states. Weights might be a placeholder in zero3 and need a gather
-    state_dict = get_peft_state_maybe_zero_3(model.state_dict(), lora_args.bias)
-    if training_args.local_rank == 0:
-        model.save_pretrained(training_args.output_dir, state_dict=state_dict)
+model.config.use_cache = False
+
+if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
+    trainer.train(resume_from_checkpoint=True)
+else:
+    trainer.train()
+trainer.save_state()
+
+# Save states. Weights might be a placeholder in zero3 and need a gather
+state_dict = get_peft_state_maybe_zero_3(model.state_dict(), lora_args.bias)
+if training_args.local_rank == 0:
+    model.save_pretrained(training_args.output_dir, state_dict=state_dict)
 
 
-if __name__ == "__main__":
-    train()
+# if __name__ == "__main__":
+    # train()
