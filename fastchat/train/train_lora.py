@@ -85,6 +85,8 @@ def get_peft_state_maybe_zero_3(state_dict, bias):
     to_return = {k: maybe_zero_3(v) for k, v in to_return.items()}
     return to_return
 
+class CastOutputToFloat(nn.Sequential):
+    def forward(self, x): return super().forward(x).to(torch.float32)
 
 def train():
     parser = transformers.HfArgumentParser(
@@ -110,9 +112,6 @@ def train():
             param.data = param.data.to(torch.float32)
     model.gradient_checkpointing_enable()  # reduce number of stored activations
     model.enable_input_require_grads()
-
-    class CastOutputToFloat(nn.Sequential):
-        def forward(self, x): return super().forward(x).to(torch.float32)
 
     model.lm_head = CastOutputToFloat(model.lm_head)
 
