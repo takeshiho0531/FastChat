@@ -230,9 +230,9 @@ def make_supervised_data_module(
     eval_dataset = dataset_cls(eval_raw_data, tokenizer=tokenizer)
     return dict(train_dataset=train_dataset, eval_dataset=eval_dataset)
 
-class CastOutputToFloat(nn.Sequential):
-    def forward(self, x):
-        return super().forward(x).to(torch.float32)
+# class CastOutputToFloat(nn.Sequential):
+    # def forward(self, x):
+        # return super().forward(x).to(torch.float32)
 
 def train():
     global local_rank
@@ -245,10 +245,9 @@ def train():
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
-        load_in_8bit=True,
         device_map='auto'
     )
-    model.lm_head = CastOutputToFloat(model.lm_head)
+
     model.config.use_cache = False
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
