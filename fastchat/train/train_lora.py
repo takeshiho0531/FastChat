@@ -85,10 +85,6 @@ def get_peft_state_maybe_zero_3(state_dict, bias):
     to_return = {k: maybe_zero_3(v) for k, v in to_return.items()}
     return to_return
 
-class CastOutputToFloat(nn.Sequential):
-    def forward(self, x):
-        return super().forward(x).to(torch.float32)
-
 # def train():
 parser = transformers.HfArgumentParser(
     (ModelArguments, DataArguments, TrainingArguments, LoraArguments)
@@ -102,7 +98,6 @@ parser = transformers.HfArgumentParser(
 
 model = transformers.AutoModelForCausalLM.from_pretrained(
     model_args.model_name_or_path,
-    load_in_8bit=True,
     device_map='auto',
     cache_dir=training_args.cache_dir,
 )
@@ -114,7 +109,6 @@ for param in model.parameters():
 model.gradient_checkpointing_enable()  # reduce number of stored activations
 model.enable_input_require_grads()
 
-model.lm_head = CastOutputToFloat(model.lm_head)
 
 lora_config = LoraConfig(
     r=lora_args.lora_r,
